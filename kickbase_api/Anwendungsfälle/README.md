@@ -209,7 +209,11 @@ Unter `.github/workflows/morgenliste-gebote.yml` liegt ein taeglicher GitHub-Act
 
 Noetige Repository-Secrets in GitHub:
 
-- `KICKBASE_TOKEN`: dein Kickbase-Token
 - `KICKBASE_LEAGUE_NAME`: exakter Name deiner Liga
+
+Fuer den Login hast du zwei Optionen:
+
+- bevorzugt ohne Token: `KICKBASE_EMAIL` und `KICKBASE_PASSWORD`
+- alternativ: `KICKBASE_TOKEN`
 
 Zum manuellen Testen kannst du den Workflow auch ueber `workflow_dispatch` direkt in GitHub starten.
