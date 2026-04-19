@@ -1,0 +1,43 @@
+name: Morgenliste Gebote
+
+permissions:
+  contents: read
+
+concurrency:
+  group: morgenliste-gebote
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '30 18 * * *'
+
+jobs:
+  run-morgenliste-gebote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: kickbase_api
+    env:
+      TZ: Europe/Berlin
+      KICKBASE_TOKEN: ${{ secrets.KICKBASE_TOKEN }}
+      KICKBASE_LEAGUE_NAME: ${{ secrets.KICKBASE_LEAGUE_NAME }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run daily market auto bids
+        run: >-
+          python Anwendungsfälle/morgen_liste_gebote.py
+          --league-name "$KICKBASE_LEAGUE_NAME"
+          --auto-bid
+          --bid-level 80
