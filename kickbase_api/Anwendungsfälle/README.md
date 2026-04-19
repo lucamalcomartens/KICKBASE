@@ -202,10 +202,13 @@ python Anwendungsfälle\morgen_liste_gebote.py --league-name "Meine Liga" --auto
 
 Unter `.github/workflows/morgenliste-gebote.yml` liegt ein taeglicher GitHub-Action-Job fuer `morgen_liste_gebote.py`.
 
-- Zeitplan: taeglich um `20:30` Uhr deutscher Zeit waehrend der Sommerzeit; in der Winterzeit laeuft derselbe Cron-Plan um `19:30`
+- Zeitplan: taeglich im Berlin-Fenster `22:10` bis `22:20`; dafuer gibt es zwei UTC-Cron-Slots fuer Sommer- und Winterzeit, von denen jeweils nur der lokal passende weiterlaeuft
+- Zufallsstart: bei geplanten Laeufen wartet der Job nach dem Trigger auf einen zufaelligen Zeitpunkt im noch verbleibenden Fenster bis `22:20:59` Berlin-Zeit; wenn GitHub den Scheduler selbst spaet liefert, startet der Lauf sofort
 - Modus: `--auto-bid --bid-level 80`
 - Python: `3.11`
 - Arbeitsverzeichnis: `kickbase_api/`
+
+`workflow_dispatch` bleibt fuer manuelle Tests ohne zusaetzliche Zufallswartezeit direkt startbar.
 
 Noetige Repository-Secrets in GitHub:
 

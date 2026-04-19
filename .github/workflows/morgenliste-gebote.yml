@@ -10,34 +10,75 @@ concurrency:
 on:
   workflow_dispatch:
   schedule:
-    - cron: '30 18 * * *'
+    - cron: '10 20 * * *'
+    - cron: '10 21 * * *'
 
 jobs:
   run-morgenliste-gebote:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: kickbase_api
     env:
       TZ: Europe/Berlin
-      KICKBASE_TOKEN: ${{ secrets.KICKBASE_TOKEN }}
-      KICKBASE_EMAIL: ${{ secrets.KICKBASE_EMAIL }}
-      KICKBASE_PASSWORD: ${{ secrets.KICKBASE_PASSWORD }}
-      KICKBASE_LEAGUE_NAME: ${{ secrets.KICKBASE_LEAGUE_NAME }}
     steps:
+      - name: Select the Berlin 22 Uhr schedule slot
+        id: berlin-slot
+        if: github.event_name == 'schedule'
+        shell: bash
+        run: |
+          local_hour="$(TZ=Europe/Berlin date +%H)"
+          if [ "$local_hour" = "22" ]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+            echo "Berlin local time is in the 22 Uhr slot."
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping duplicate UTC schedule outside the 22 Uhr Berlin slot."
+          fi
+
       - name: Checkout repository
+        if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Python
+        if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
       - name: Install dependencies
+        if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
+      - name: Wait for random Berlin start time
+        if: github.event_name == 'schedule' && steps.berlin-slot.outputs.should_run == 'true'
+        shell: bash
+        run: |
+          now_epoch="$(TZ=Europe/Berlin date +%s)"
+          today_local="$(TZ=Europe/Berlin date +%F)"
+          window_end_epoch="$(TZ=Europe/Berlin date -d "$today_local 22:20:59" +%s)"
+          remaining_seconds=$(( window_end_epoch - now_epoch ))
+
+          if [ "$remaining_seconds" -le 0 ]; then
+            echo "The workflow reached the runner after 22:20:59 Berlin time. Continuing immediately."
+            exit 0
+          fi
+
+          delay_seconds=$(( RANDOM % (remaining_seconds + 1) ))
+          target_epoch=$(( now_epoch + delay_seconds ))
+          target_local="$(TZ=Europe/Berlin date -d "@$target_epoch" '+%H:%M:%S')"
+
+          echo "Waiting ${delay_seconds}s for random start at ${target_local} Berlin time."
+          sleep "$delay_seconds"
+
       - name: Run daily market auto bids
+        if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
+        env:
+          KICKBASE_TOKEN: ${{ secrets.KICKBASE_TOKEN }}
+          KICKBASE_EMAIL: ${{ secrets.KICKBASE_EMAIL }}
+          KICKBASE_PASSWORD: ${{ secrets.KICKBASE_PASSWORD }}
+          KICKBASE_LEAGUE_NAME: ${{ secrets.KICKBASE_LEAGUE_NAME }}
         run: >-
           python Anwendungsfälle/morgen_liste_gebote.py
           --league-name "$KICKBASE_LEAGUE_NAME"
