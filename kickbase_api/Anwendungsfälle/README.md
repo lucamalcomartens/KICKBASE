@@ -157,6 +157,7 @@ Die gleiche Datei kann auch automatisch Gebote fuer die Marktliste bis zum naech
 - zusaetzlich werden Trendwenden mitgenommen: `2T` negativ und `1T` mindestens `80000` positiv
 - fuer die Kalibrierung werden im Auto-Bid-Lauf trotzdem Prognosen fuer alle Marktspieler bis zum naechsten Marktwert-Update geloggt, auch wenn am Ende kein Gebot gesetzt wird
 - vor dem Auto-Bid-Start waehlt man `50` oder `80` als Gebotsniveau, sofern `--bid-level` nicht direkt gesetzt wurde
+- der taegliche GitHub-Actions-Workflow ist aktuell fest auf `--bid-level 50` gesetzt und bietet damit automatisch das 50. Perzentil
 - beim direkten Start der Datei, z.B. ueber den Play-Button in VS Code, startet dieser Auto-Bid-Modus automatisch
 - nach jedem Lauf erscheint eine Review-Liste mit allen betroffenen Spielern, den 1T/2T/3T-Aenderungen, P50/P80 und dem Gebotsstatus
 - die Review-Liste zeigt jetzt auch den konkreten Trigger je Spieler

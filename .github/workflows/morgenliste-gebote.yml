@@ -83,4 +83,4 @@ jobs:
           python Anwendungsfälle/morgen_liste_gebote.py
           --league-name "$KICKBASE_LEAGUE_NAME"
           --auto-bid
-          --bid-level 80
+          --bid-level 50
