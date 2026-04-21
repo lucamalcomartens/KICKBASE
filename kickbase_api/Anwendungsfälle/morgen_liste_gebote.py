@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--auto-bid",
         action="store_true",
-        help="Setzt automatisch Gebote fuer Marktspieler bis zum naechsten Marktwert-Update, wenn deren letzte 3 Marktwertaenderungen jeweils den Schwellwert erfuellen.",
+        help="Setzt automatisch Gebote fuer Marktspieler bis zum naechsten Marktwert-Update, wenn sie mindestens eine der Marktwertregeln erfuellen.",
     )
     parser.add_argument(
         "--list-only",
@@ -81,6 +81,96 @@ def main(argv: list[str] | None = None) -> int:
         type=int,
         default=80_000,
         help="Zusaetzlicher Trigger: 2T negativ und 1T mindestens in dieser Hoehe positiv.",
+    )
+    parser.add_argument(
+        "--min-three-day-total-rise",
+        type=int,
+        default=240_000,
+        help="Zusaetzlicher Trigger: 1T+2T+3T muss mindestens diesen Gesamtanstieg erreichen.",
+    )
+    parser.add_argument(
+        "--min-three-day-total-single-day-change",
+        type=int,
+        default=-30_000,
+        help="Zusaetzlicher Trigger fuer die Summenregel: kein einzelner Tag darf unter diesem Wert liegen.",
+    )
+    parser.add_argument(
+        "--min-step-three-day-rise",
+        type=int,
+        default=40_000,
+        help="Zusaetzlicher Trigger Treppenregel: Mindestanstieg fuer 3T.",
+    )
+    parser.add_argument(
+        "--min-step-two-day-rise",
+        type=int,
+        default=70_000,
+        help="Zusaetzlicher Trigger Treppenregel: Mindestanstieg fuer 2T.",
+    )
+    parser.add_argument(
+        "--min-step-one-day-rise",
+        type=int,
+        default=100_000,
+        help="Zusaetzlicher Trigger Treppenregel: Mindestanstieg fuer 1T.",
+    )
+    parser.add_argument(
+        "--min-confirmed-recovery-two-day-rise",
+        type=int,
+        default=50_000,
+        help="Zusaetzlicher Trigger Erholung: 2T muss mindestens diesen positiven Wert erreichen.",
+    )
+    parser.add_argument(
+        "--min-confirmed-recovery-one-day-rise",
+        type=int,
+        default=80_000,
+        help="Zusaetzlicher Trigger Erholung: 1T muss mindestens diesen positiven Wert erreichen.",
+    )
+    parser.add_argument(
+        "--min-confirmed-recovery-combined-rise",
+        type=int,
+        default=160_000,
+        help="Zusaetzlicher Trigger Erholung: 1T+2T muss mindestens diesen Wert erreichen.",
+    )
+    parser.add_argument(
+        "--max-low-price-market-value",
+        type=int,
+        default=3_000_000,
+        help="Zusaetzlicher Trigger Billigspieler: bis zu diesem Marktwert greifen Prozent-Schwellen statt fixer Euro-Schwellen.",
+    )
+    parser.add_argument(
+        "--min-low-price-one-day-rise-pct",
+        type=float,
+        default=4.0,
+        help="Zusaetzlicher Trigger Billigspieler: Mindestanstieg fuer 1T in Prozent des aktuellen Marktwerts.",
+    )
+    parser.add_argument(
+        "--min-low-price-combined-rise-pct",
+        type=float,
+        default=9.0,
+        help="Zusaetzlicher Trigger Billigspieler: Mindestanstieg fuer 1T+2T+3T in Prozent des aktuellen Marktwerts.",
+    )
+    parser.add_argument(
+        "--min-reacceleration-three-day-rise",
+        type=int,
+        default=80_000,
+        help="Zusaetzlicher Trigger Re-Acceleration: 3T muss mindestens diesen Wert erreichen.",
+    )
+    parser.add_argument(
+        "--min-reacceleration-two-day-change",
+        type=int,
+        default=-20_000,
+        help="Zusaetzlicher Trigger Re-Acceleration: Untergrenze fuer 2T.",
+    )
+    parser.add_argument(
+        "--max-reacceleration-two-day-change",
+        type=int,
+        default=30_000,
+        help="Zusaetzlicher Trigger Re-Acceleration: Obergrenze fuer 2T.",
+    )
+    parser.add_argument(
+        "--min-reacceleration-one-day-rise",
+        type=int,
+        default=100_000,
+        help="Zusaetzlicher Trigger Re-Acceleration: 1T muss mindestens diesen Wert erreichen.",
     )
     parser.add_argument(
         "--bid-level",
@@ -138,19 +228,19 @@ def main(argv: list[str] | None = None) -> int:
         if not review_items:
             print(
                 "Keine Auto-Gebote gesetzt. Kein Marktspieler bis zum naechsten Marktwert-Update erfuellt aktuell "
-                f"entweder 1T/2T/3T jeweils >= {forecast_app._format_money(args.min_three_day_rise)} "
-                f"oder 1T >= 2T + {forecast_app._format_money(args.min_one_day_acceleration)} "
-                f"oder 2T < 0 und 1T >= {forecast_app._format_money(args.min_trend_reversal_rise)}."
+                "eine der aktiven Regeln:"
             )
+            for rule_description in _auto_bid_rule_descriptions(args):
+                print(f"- {rule_description}")
             return 0
 
         print(
-            f"Auto-Gebote bis zum Marktwert-Update am {next_update.strftime('%d.%m.%Y %H:%M')}: {len(review_items)} Spieler "
-            f"(Regel: 1T/2T/3T jeweils >= {forecast_app._format_money(args.min_three_day_rise)} "
-            f"oder 1T >= 2T + {forecast_app._format_money(args.min_one_day_acceleration)} "
-            f"oder 2T < 0 und 1T >= {forecast_app._format_money(args.min_trend_reversal_rise)}, "
-            f"Gebotsniveau: {_bid_level_label(args.bid_level)})"
+            f"Auto-Gebote bis zum Marktwert-Update am {next_update.strftime('%d.%m.%Y %H:%M')}: {len(review_items)} Spieler"
         )
+        print("Aktive Trigger:")
+        for rule_description in _auto_bid_rule_descriptions(args):
+            print(f"- {rule_description}")
+        print(f"Gebotsniveau: {_bid_level_label(args.bid_level)}")
         if args.dry_run:
             print("Dry-Run aktiv: Es wurden keine echten Gebote an Kickbase gesendet.")
         print()
@@ -227,9 +317,8 @@ def _run_auto_bids_until_next_update(
         three_day_delta = _three_day_market_value_delta(recent_changes)
         trigger_reason = _auto_bid_trigger_reason(
             recent_changes,
-            minimum_three_day_rise=int(args.min_three_day_rise),
-            minimum_one_day_acceleration=int(args.min_one_day_acceleration),
-            minimum_trend_reversal_rise=int(args.min_trend_reversal_rise),
+            market_value=forecast.market_value,
+            args=args,
         )
         if trigger_reason is None:
             continue
@@ -322,23 +411,210 @@ def _meets_trend_reversal_threshold(
     return int(previous_change) < 0 and int(latest_change) >= minimum_reversal_rise
 
 
+def _meets_three_day_total_rise_threshold(
+    changes: tuple[int | None, int | None, int | None],
+    minimum_total_rise: int,
+    minimum_single_day_change: int,
+) -> bool:
+    if any(change is None for change in changes):
+        return False
+    total_rise = _three_day_market_value_delta(changes)
+    if total_rise is None or total_rise < minimum_total_rise:
+        return False
+    return all(int(change) >= minimum_single_day_change for change in changes if change is not None)
+
+
+def _meets_step_ladder_threshold(
+    changes: tuple[int | None, int | None, int | None],
+    minimum_three_day_rise: int,
+    minimum_two_day_rise: int,
+    minimum_one_day_rise: int,
+) -> bool:
+    latest_change, previous_change, oldest_change = changes
+    if latest_change is None or previous_change is None or oldest_change is None:
+        return False
+    latest = int(latest_change)
+    previous = int(previous_change)
+    oldest = int(oldest_change)
+    return (
+        oldest >= minimum_three_day_rise
+        and previous >= minimum_two_day_rise
+        and latest >= minimum_one_day_rise
+        and latest >= previous >= oldest
+    )
+
+
+def _meets_confirmed_recovery_threshold(
+    changes: tuple[int | None, int | None, int | None],
+    minimum_two_day_rise: int,
+    minimum_one_day_rise: int,
+    minimum_combined_rise: int,
+) -> bool:
+    latest_change, previous_change, oldest_change = changes
+    if latest_change is None or previous_change is None or oldest_change is None:
+        return False
+    latest = int(latest_change)
+    previous = int(previous_change)
+    oldest = int(oldest_change)
+    return (
+        oldest < 0
+        and previous >= minimum_two_day_rise
+        and latest >= minimum_one_day_rise
+        and latest + previous >= minimum_combined_rise
+    )
+
+
+def _meets_low_price_percentage_threshold(
+    changes: tuple[int | None, int | None, int | None],
+    *,
+    market_value: int | None,
+    maximum_market_value: int,
+    minimum_one_day_rise_pct: float,
+    minimum_combined_rise_pct: float,
+) -> bool:
+    if market_value is None or market_value <= 0 or market_value > maximum_market_value:
+        return False
+    if any(change is None for change in changes):
+        return False
+    total_rise = _three_day_market_value_delta(changes)
+    if total_rise is None:
+        return False
+    reference_market_value = float(market_value)
+    latest_rise_pct = int(changes[0]) / reference_market_value * 100
+    combined_rise_pct = total_rise / reference_market_value * 100
+    return latest_rise_pct >= minimum_one_day_rise_pct and combined_rise_pct >= minimum_combined_rise_pct
+
+
+def _meets_reacceleration_threshold(
+    changes: tuple[int | None, int | None, int | None],
+    minimum_three_day_rise: int,
+    minimum_two_day_change: int,
+    maximum_two_day_change: int,
+    minimum_one_day_rise: int,
+) -> bool:
+    latest_change, previous_change, oldest_change = changes
+    if latest_change is None or previous_change is None or oldest_change is None:
+        return False
+    latest = int(latest_change)
+    previous = int(previous_change)
+    oldest = int(oldest_change)
+    return (
+        oldest >= minimum_three_day_rise
+        and minimum_two_day_change <= previous <= maximum_two_day_change
+        and latest >= minimum_one_day_rise
+    )
+
+
 def _auto_bid_trigger_reason(
     changes: tuple[int | None, int | None, int | None],
     *,
-    minimum_three_day_rise: int,
-    minimum_one_day_acceleration: int,
-    minimum_trend_reversal_rise: int,
+    market_value: int | None,
+    args,
 ) -> str | None:
     reasons: list[str] = []
-    if _meets_recent_rise_threshold(changes, minimum_three_day_rise):
-        reasons.append(f"1T/2T/3T jeweils >= {forecast_app._format_money(minimum_three_day_rise)}")
-    if _meets_one_day_acceleration_threshold(changes, minimum_one_day_acceleration):
-        reasons.append(f"1T liegt >= {forecast_app._format_money(minimum_one_day_acceleration)} ueber 2T")
-    if _meets_trend_reversal_threshold(changes, minimum_trend_reversal_rise):
-        reasons.append(f"Trendwende: 2T negativ und 1T >= {forecast_app._format_money(minimum_trend_reversal_rise)}")
+    if _meets_recent_rise_threshold(changes, int(args.min_three_day_rise)):
+        reasons.append(f"1T/2T/3T jeweils >= {forecast_app._format_money(args.min_three_day_rise)}")
+    if _meets_one_day_acceleration_threshold(changes, int(args.min_one_day_acceleration)):
+        reasons.append(f"1T liegt >= {forecast_app._format_money(args.min_one_day_acceleration)} ueber 2T")
+    if _meets_trend_reversal_threshold(changes, int(args.min_trend_reversal_rise)):
+        reasons.append(f"Trendwende: 2T negativ und 1T >= {forecast_app._format_money(args.min_trend_reversal_rise)}")
+    if _meets_three_day_total_rise_threshold(
+        changes,
+        minimum_total_rise=int(args.min_three_day_total_rise),
+        minimum_single_day_change=int(args.min_three_day_total_single_day_change),
+    ):
+        reasons.append(
+            "Summenregel: "
+            f"1T+2T+3T >= {forecast_app._format_money(args.min_three_day_total_rise)} "
+            f"und kein Tag < {forecast_app._format_signed_money(args.min_three_day_total_single_day_change)}"
+        )
+    if _meets_step_ladder_threshold(
+        changes,
+        minimum_three_day_rise=int(args.min_step_three_day_rise),
+        minimum_two_day_rise=int(args.min_step_two_day_rise),
+        minimum_one_day_rise=int(args.min_step_one_day_rise),
+    ):
+        reasons.append(
+            "Treppe: "
+            f"3T >= {forecast_app._format_money(args.min_step_three_day_rise)}, "
+            f"2T >= {forecast_app._format_money(args.min_step_two_day_rise)}, "
+            f"1T >= {forecast_app._format_money(args.min_step_one_day_rise)}"
+        )
+    if _meets_confirmed_recovery_threshold(
+        changes,
+        minimum_two_day_rise=int(args.min_confirmed_recovery_two_day_rise),
+        minimum_one_day_rise=int(args.min_confirmed_recovery_one_day_rise),
+        minimum_combined_rise=int(args.min_confirmed_recovery_combined_rise),
+    ):
+        reasons.append(
+            "Erholung bestaetigt: "
+            f"3T negativ, 2T >= {forecast_app._format_money(args.min_confirmed_recovery_two_day_rise)}, "
+            f"1T >= {forecast_app._format_money(args.min_confirmed_recovery_one_day_rise)}, "
+            f"1T+2T >= {forecast_app._format_money(args.min_confirmed_recovery_combined_rise)}"
+        )
+    if _meets_low_price_percentage_threshold(
+        changes,
+        market_value=market_value,
+        maximum_market_value=int(args.max_low_price_market_value),
+        minimum_one_day_rise_pct=float(args.min_low_price_one_day_rise_pct),
+        minimum_combined_rise_pct=float(args.min_low_price_combined_rise_pct),
+    ):
+        reasons.append(
+            "Billigspielerregel: "
+            f"MW <= {forecast_app._format_money(args.max_low_price_market_value)}, "
+            f"1T >= {_format_percentage(args.min_low_price_one_day_rise_pct)} des MW, "
+            f"1T+2T+3T >= {_format_percentage(args.min_low_price_combined_rise_pct)} des MW"
+        )
+    if _meets_reacceleration_threshold(
+        changes,
+        minimum_three_day_rise=int(args.min_reacceleration_three_day_rise),
+        minimum_two_day_change=int(args.min_reacceleration_two_day_change),
+        maximum_two_day_change=int(args.max_reacceleration_two_day_change),
+        minimum_one_day_rise=int(args.min_reacceleration_one_day_rise),
+    ):
+        reasons.append(
+            "Re-Acceleration: "
+            f"3T >= {forecast_app._format_money(args.min_reacceleration_three_day_rise)}, "
+            f"2T zwischen {forecast_app._format_signed_money(args.min_reacceleration_two_day_change)} "
+            f"und {forecast_app._format_signed_money(args.max_reacceleration_two_day_change)}, "
+            f"1T >= {forecast_app._format_money(args.min_reacceleration_one_day_rise)}"
+        )
     if not reasons:
         return None
     return " | ".join(reasons)
+
+
+def _auto_bid_rule_descriptions(args) -> tuple[str, ...]:
+    return (
+        f"1T/2T/3T jeweils >= {forecast_app._format_money(args.min_three_day_rise)}",
+        f"1T >= 2T + {forecast_app._format_money(args.min_one_day_acceleration)}",
+        f"2T < 0 und 1T >= {forecast_app._format_money(args.min_trend_reversal_rise)}",
+        (
+            f"1T+2T+3T >= {forecast_app._format_money(args.min_three_day_total_rise)} "
+            f"und kein Tag < {forecast_app._format_signed_money(args.min_three_day_total_single_day_change)}"
+        ),
+        (
+            f"Treppe: 3T >= {forecast_app._format_money(args.min_step_three_day_rise)}, "
+            f"2T >= {forecast_app._format_money(args.min_step_two_day_rise)}, "
+            f"1T >= {forecast_app._format_money(args.min_step_one_day_rise)} und 1T >= 2T >= 3T"
+        ),
+        (
+            f"Erholung: 3T negativ, 2T >= {forecast_app._format_money(args.min_confirmed_recovery_two_day_rise)}, "
+            f"1T >= {forecast_app._format_money(args.min_confirmed_recovery_one_day_rise)}, "
+            f"1T+2T >= {forecast_app._format_money(args.min_confirmed_recovery_combined_rise)}"
+        ),
+        (
+            f"Billigspieler bis {forecast_app._format_money(args.max_low_price_market_value)}: "
+            f"1T >= {_format_percentage(args.min_low_price_one_day_rise_pct)} des MW und "
+            f"1T+2T+3T >= {_format_percentage(args.min_low_price_combined_rise_pct)} des MW"
+        ),
+        (
+            f"Re-Acceleration: 3T >= {forecast_app._format_money(args.min_reacceleration_three_day_rise)}, "
+            f"2T zwischen {forecast_app._format_signed_money(args.min_reacceleration_two_day_change)} und "
+            f"{forecast_app._format_signed_money(args.max_reacceleration_two_day_change)}, "
+            f"1T >= {forecast_app._format_money(args.min_reacceleration_one_day_rise)}"
+        ),
+    )
 
 
 def _bid_level_label(bid_level: str) -> str:
@@ -371,6 +647,10 @@ def _format_money_optional(value: int | None) -> str:
     if value is None:
         return "kein Gebot"
     return forecast_app._format_money(value)
+
+
+def _format_percentage(value: float) -> str:
+    return f"{float(value):.1f}%"
 
 
 def _format_auto_bid_review_item(index: int, item: AutoBidReviewItem) -> str:

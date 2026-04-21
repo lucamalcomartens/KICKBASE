@@ -155,6 +155,11 @@ Die gleiche Datei kann auch automatisch Gebote fuer die Marktliste bis zum naech
 - es werden nur Spieler betrachtet, die bis zum naechsten Marktwert-Update auslaufen und deren letzte 3 Marktwertaenderungen jeweils mindestens `80000` betragen
 - alternativ werden auch Spieler betrachtet, bei denen der letzte 1T-Anstieg mindestens `80000` ueber dem 2T-Anstieg liegt, auch wenn die 3-Tages-Regel nicht komplett erfuellt ist
 - zusaetzlich werden Trendwenden mitgenommen: `2T` negativ und `1T` mindestens `80000` positiv
+- zusaetzlich greift eine Summenregel: `1T+2T+3T` mindestens `240000` und kein Tag kleiner als `-30000`
+- zusaetzlich greift eine Treppenregel: `3T >= 40000`, `2T >= 70000`, `1T >= 100000` und zugleich `1T >= 2T >= 3T`
+- zusaetzlich greift eine bestaetigte Erholung: `3T` negativ, `2T >= 50000`, `1T >= 80000` und `1T+2T >= 160000`
+- zusaetzlich gibt es eine Billigspielerregel bis `3000000` Marktwert: `1T >= 4.0%` des Marktwerts und `1T+2T+3T >= 9.0%` des Marktwerts
+- zusaetzlich gibt es eine Re-Acceleration-Regel: `3T >= 80000`, `2T` zwischen `-20000` und `30000`, `1T >= 100000`
 - fuer die Kalibrierung werden im Auto-Bid-Lauf trotzdem Prognosen fuer alle Marktspieler bis zum naechsten Marktwert-Update geloggt, auch wenn am Ende kein Gebot gesetzt wird
 - vor dem Auto-Bid-Start waehlt man `50` oder `80` als Gebotsniveau, sofern `--bid-level` nicht direkt gesetzt wurde
 - der taegliche GitHub-Actions-Workflow ist aktuell fest auf `--bid-level 50` gesetzt und bietet damit automatisch das 50. Perzentil
@@ -187,10 +192,10 @@ Fester Lauf mit dem sicheren 80. Perzentil:
 python Anwendungsfälle\morgen_liste_gebote.py --league-name "Meine Liga" --auto-bid --bid-level 80
 ```
 
-Optional kannst du den 3-Tages-Filter oder das Gebotsniveau anpassen:
+Optional kannst du die Trigger-Schwellen oder das Gebotsniveau anpassen:
 
 ```powershell
-python Anwendungsfälle\morgen_liste_gebote.py --league-name "Meine Liga" --auto-bid --min-three-day-rise 150000 --bid-level 50
+python Anwendungsfälle\morgen_liste_gebote.py --league-name "Meine Liga" --auto-bid --min-three-day-rise 150000 --min-three-day-total-rise 260000 --min-step-one-day-rise 120000 --bid-level 50
 ```
 
 Wenn vorhandene eigene Gebote automatisch auf den Zielwert angehoben werden sollen:
@@ -205,7 +210,7 @@ Unter `.github/workflows/morgenliste-gebote.yml` liegt ein taeglicher GitHub-Act
 
 - Zeitplan: taeglich im Berlin-Fenster `22:10` bis `22:20`; dafuer gibt es zwei UTC-Cron-Slots fuer Sommer- und Winterzeit, von denen jeweils nur der lokal passende weiterlaeuft
 - Zufallsstart: bei geplanten Laeufen wartet der Job nach dem Trigger auf einen zufaelligen Zeitpunkt im noch verbleibenden Fenster bis `22:20:59` Berlin-Zeit; wenn GitHub den Scheduler selbst spaet liefert, startet der Lauf sofort
-- Modus: `--auto-bid --bid-level 80`
+- Modus: `--auto-bid --bid-level 50`
 - Python: `3.11`
 - Arbeitsverzeichnis: `kickbase_api/`
 

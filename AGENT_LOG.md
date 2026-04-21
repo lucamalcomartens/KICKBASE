@@ -30,3 +30,15 @@
 - Dokumentation in `kickbase_api/Anwendungsfälle/README.md` fuer Workflow, Secrets und Zeitfenster aktualisiert.
 - Geprueft: CLI-Einstieg von `morgen_liste_gebote.py` ueber `--help` erfolgreich; YAML- und Markdown-Dateien ohne gemeldete Fehler.
 - Vom Nutzer bestaetigt: manueller `workflow_dispatch`-Test des GitHub-Action-Workflows hat funktioniert.
+
+### 2026-04-21
+
+- Auto-Bid-Logik in `kickbase_api/Anwendungsfälle/morgen_liste_gebote.py` um fuenf weitere Marktwert-Regeln erweitert: Summenregel, Treppenregel, bestaetigte Erholung, Billigspieler-Prozentregel und Re-Acceleration.
+- Neue CLI-Schwellwerte fuer alle zusaetzlichen Regeln in `morgen_liste_gebote.py` ergaenzt, damit die Trigger weiter lokal und im Workflow justierbar bleiben.
+- Ausgabe im Auto-Bid-Lauf auf eine gemeinsame Regelliste umgestellt, damit Review-Text und No-Match-Text nicht auseinanderlaufen.
+- Dokumentation in `kickbase_api/Anwendungsfälle/README.md` an die neue Triggerlogik angepasst und den bisherigen Widerspruch zum verifizierten Workflow-Modus behoben: README zeigt jetzt wie der Code `--auto-bid --bid-level 50` statt `80`.
+- Geprueft: `python -m py_compile Anwendungsfälle/morgen_liste_gebote.py` erfolgreich.
+- Geprueft: `python Anwendungsfälle/morgen_liste_gebote.py --help` zeigt alle neuen CLI-Parameter fuer die zusaetzlichen Regeln an.
+- Geprueft: Dry-Run `python Anwendungsfälle/morgen_liste_gebote.py --auto-bid --dry-run --bid-level 50` in Liga `Spitz (3594592)` liefert genau einen Treffer, Lucas Hoeler.
+- Dry-Run-Detail: Lucas Hoeler triggert ueber strengen 3-Tages-Anstieg, Summenregel und Billigspielerregel; ein bestehendes eigenes Gebot wurde korrekt nur gemeldet und nicht veraendert.
+- Kein echter Gebotsversand erfolgt, weil der Validierungslauf explizit als Dry-Run ausgefuehrt wurde.

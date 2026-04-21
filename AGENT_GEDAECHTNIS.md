@@ -31,18 +31,22 @@
 - Die aktuelle Repo-Anforderung ist ein repo-lokaler Entwicklungsagent mit persistentem Markdown-Gedaechtnis und Fortschrittslog.
 - Die Gebots-Workflows sind nicht auf Windows-Credentials festgelegt: `_build_client()` faellt nach Windows-Credential-Checks auf `KickbaseClient.from_env()` zurueck und kann damit auch headless auf einem externen Host laufen.
 - Das eigentliche Problem fuer die taegliche Nutzung ist nicht die Skriptlogik, sondern die fehlende Always-on-Ausfuehrung und ein Push-Kanal fuer Ergebnisse oder Aktionen.
-- Der taegliche GitHub-Action-Workflow laeuft mit `--auto-bid --bid-level 80` und einem Zufallsstart im Berlin-Fenster `22:10` bis `22:20`.
+- Der taegliche GitHub-Action-Workflow laeuft verifiziert mit `--auto-bid --bid-level 50` und einem Zufallsstart im Berlin-Fenster `22:10` bis `22:20`.
 - Der Workflow unterstuetzt Login ueber `KICKBASE_EMAIL` und `KICKBASE_PASSWORD`; optional kann weiter `KICKBASE_TOKEN` genutzt werden.
 - Der manuelle `workflow_dispatch`-Test fuer den GitHub-Action-Workflow wurde erfolgreich bestaetigt.
+- Die Auto-Bid-Logik in `kickbase_api/Anwendungsfälle/morgen_liste_gebote.py` umfasst neben den urspruenglichen drei Marktwert-Triggern jetzt auch Summenregel, Treppenregel, bestaetigte Erholung, Billigspieler-Prozentregel und Re-Acceleration; alle Schwellwerte sind per CLI steuerbar.
+- Der Dry-Run vom 2026-04-21 in Liga `Spitz (3594592)` lieferte mit den erweiterten Regeln genau einen aktiven Auto-Bid-Kandidaten: Lucas Hoeler; wegen bestehendem eigenem Gebot wurde nichts veraendert.
 
 ## Offene Punkte
 
 - Falls gewuenscht, kann der Agent spaeter noch um spezialisierte Prompts oder weitere Teilagenten erweitert werden.
 - Der naechste relevante Praxistest ist ein geplanter Nachtlauf des GitHub-Action-Workflows im echten 22:10-bis-22:20-Fenster.
 - Fuer echte Abwesenheitstage braucht das Projekt entweder einen externen Scheduler mit Benachrichtigung oder eine klar begrenzte Vollautomatik fuer sichere Gebote.
+- Die neuen Marktwert-Regeln sollten ueber weitere Dry-Runs oder echte Nachtlaeufe beobachtet werden, damit sich Schwellwerte bei Bedarf nachschaerfen lassen.
 
 ## Letzte Aktualisierung
 
 - 2026-04-19: Initialer Agent-Workflow fuer Repo-Gedaechtnis und Fortschrittslog angelegt.
 - 2026-04-19: Automation-Anforderung fuer taegliche Marktpruefung verifiziert; headless Lauf ueber Env-Variablen statt nur Windows-Credentials moeglich.
 - 2026-04-19: GitHub-Actions-Automation fuer `morgen_liste_gebote.py` mit erfolgreichem manuellem Test und Zufallsfenster 22:10 bis 22:20 Berlin-Zeit verifiziert.
+- 2026-04-21: Auto-Bid-Logik um fuenf weitere Marktwert-Regeln erweitert, Workflow-Dokumentation auf verifiziertes `--bid-level 50` korrigiert und Dry-Run gegen Liga `Spitz` mit Lucas Hoeler als einzigem Treffer bestaetigt.
