@@ -17,9 +17,6 @@ jobs:
   run-morgenliste-gebote:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: kickbase_api
     env:
       TZ: Europe/Berlin
     steps:
@@ -49,6 +46,7 @@ jobs:
 
       - name: Install dependencies
         if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
+        working-directory: kickbase_api
         run: pip install -r requirements.txt
 
       - name: Wait for random Berlin start time
@@ -74,6 +72,7 @@ jobs:
 
       - name: Run daily market auto bids
         if: github.event_name != 'schedule' || steps.berlin-slot.outputs.should_run == 'true'
+        working-directory: kickbase_api
         env:
           KICKBASE_TOKEN: ${{ secrets.KICKBASE_TOKEN }}
           KICKBASE_EMAIL: ${{ secrets.KICKBASE_EMAIL }}
