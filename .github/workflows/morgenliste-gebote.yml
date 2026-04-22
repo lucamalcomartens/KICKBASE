@@ -24,14 +24,25 @@ jobs:
         id: berlin-slot
         if: github.event_name == 'schedule'
         shell: bash
+        env:
+          TRIGGER_SCHEDULE: ${{ github.event.schedule }}
         run: |
-          local_hour="$(TZ=Europe/Berlin date +%H)"
-          if [ "$local_hour" = "22" ]; then
-            echo "should_run=true" >> "$GITHUB_OUTPUT"
-            echo "Berlin local time is in the 22 Uhr slot."
+          berlin_offset="$(TZ=Europe/Berlin date +%z)"
+          should_run=false
+
+          case "$berlin_offset:$TRIGGER_SCHEDULE" in
+            "+0200:10 20 * * *"|"+0100:10 21 * * *")
+              should_run=true
+              ;;
+          esac
+
+          echo "Berlin UTC offset is ${berlin_offset}; trigger schedule is '${TRIGGER_SCHEDULE}'."
+          echo "should_run=${should_run}" >> "$GITHUB_OUTPUT"
+
+          if [ "$should_run" = "true" ]; then
+            echo "Trigger matches the active Berlin 22 Uhr slot."
           else
-            echo "should_run=false" >> "$GITHUB_OUTPUT"
-            echo "Skipping duplicate UTC schedule outside the 22 Uhr Berlin slot."
+            echo "Skipping duplicate UTC schedule outside the active Berlin 22 Uhr slot."
           fi
 
       - name: Checkout repository
